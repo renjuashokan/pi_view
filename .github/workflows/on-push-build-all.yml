@@ -1,0 +1,70 @@
+name: On push create Android APK
+
+on:
+  push:
+    branches:
+      - main
+      - try/*
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Set up Java JDK
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17' # Use Java 17 for compatibility with AGP 8.x
+          distribution: 'temurin'
+
+      # Step 3: Set up Flutter
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.27.1'
+
+      # Step 4: Install dependencies
+      - name: Install dependencies
+        run: flutter pub get
+
+      # Step 5: Build the Android APK
+      - name: Build APK
+        run: flutter build apk --release
+
+      - name: Set artifact name and development version
+        id: set-artifact-props
+        run: |
+          # Get branch name
+          if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
+            BRANCH_NAME="${GITHUB_HEAD_REF}"
+          else
+            BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+          fi
+          
+          # Clean branch name for artifact naming
+          CLEAN_NAME="$(echo "$BRANCH_NAME" | sed -E 's/^(b|feat\/|try\/)//g' | sed -e 's/ /_/g' | sed -e 's/\//_/g')"
+          echo "Clean branch name is: $CLEAN_NAME"
+
+          RUN_NUMBER=${{ github.run_number }}
+          VERSION="${CLEAN_NAME}_${RUN_NUMBER}"
+          
+          echo "build-name=$VERSION" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          
+          echo "Using artifact name: piview-android-apk-${VERSION}"
+          echo "Using version: $VERSION"
+
+      # Step 6: Upload the APK as an artifact
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk-${{ steps.set-artifact-props.outputs.build-name }}
+          path: build/app/outputs/flutter-apk/app-release.apk

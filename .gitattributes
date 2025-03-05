@@ -1,0 +1,43 @@
+# Normalize line endings for all text files
+* text=auto
+
+# Explicitly set line endings for specific file types
+*.dart text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.js text eol=lf
+
+# Mark binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+*.mp3 binary
+*.mp4 binary
+*.wav binary
+*.mov binary
+
+# Ignore generated files
+/build/* export-ignore
+/ios/Flutter/App.framework export-ignore
+/ios/Flutter/Flutter.framework export-ignore
+/ios/Pods export-ignore
+/android/app/build export-ignore
+
+# Handle large files
+*.mp4 binary -diff
+*.mov binary -diff
+*.zip binary -diff
+
+# Prevent merge conflicts for lock files
+/pubspec.lock merge=union
+/ios/Podfile.lock merge=union
+/android/gradle.properties merge=union

@@ -11,12 +11,14 @@ import '../models/media_item.dart';
 
 class MediaPlayerView extends StatelessWidget {
   final String serverAddress;
+  final String serverPort;
   final List<MediaItem> playlist;
   final int initialIndex;
 
   const MediaPlayerView({
     Key? key,
     required this.serverAddress,
+    required this.serverPort,
     required this.playlist,
     required this.initialIndex,
   }) : super(key: key);
@@ -24,7 +26,7 @@ class MediaPlayerView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => MediaPlayerViewModel(serverAddress)
+      create: (_) => MediaPlayerViewModel(serverAddress, serverPort)
         ..setPlaylist(playlist, initialIndex),
       child: Scaffold(
         appBar: AppBar(

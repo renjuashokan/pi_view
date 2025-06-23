@@ -6,12 +6,14 @@ import '../models/image_item.dart';
 
 class ImageView extends StatefulWidget {
   final String serverAddress;
+  final String serverPort;
   final ImageItem imageItem;
   final List<ImageItem> allImages;
 
   const ImageView({
     Key? key,
     required this.serverAddress,
+    required this.serverPort,
     required this.imageItem,
     required this.allImages,
   }) : super(key: key);
@@ -70,7 +72,7 @@ class _ImageViewState extends State<ImageView> {
         .replaceAll('%23', '#')
         .replaceAll('%2C', ',');
 
-    return 'http://${widget.serverAddress}:8080/api/v1/file/$encodedPath';
+    return 'http://${widget.serverAddress}:${widget.serverPort}/api/v1/file/$encodedPath';
   }
 
   void _onTransformChanged() {

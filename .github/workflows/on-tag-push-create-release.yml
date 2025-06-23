@@ -189,8 +189,6 @@ jobs:
       run: |
         TAG_NAME="${{ needs.common-vars.outputs.tag-name }}"
         cat > ${{ env.RELEASE_DIR }}/RELEASE_NOTES.md << EOF
-        # PiView Android ${TAG_NAME}
-        
         This release contains the Android APK for PiView.
         
         ## Installation

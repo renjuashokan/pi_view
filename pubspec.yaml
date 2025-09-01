@@ -48,6 +48,7 @@ dependencies:
   # Device orientation, MIT License
   auto_orientation: #^2.3.1
     git: https://github.com/Kanwarpalsingh1986/auto_orientation
+  url_launcher: ^6.3.1
 
 dev_dependencies:
   flutter_test:

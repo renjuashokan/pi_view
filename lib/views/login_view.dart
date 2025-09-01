@@ -11,6 +11,8 @@ class LoginView extends StatefulWidget {
 
 class _LoginViewState extends State<LoginView> {
   final TextEditingController _serverController = TextEditingController();
+  final TextEditingController _serverPortController =
+      TextEditingController(text: "8080");
   final TextEditingController _emailController =
       TextEditingController(text: 'test@example.com');
   final TextEditingController _passwordController =
@@ -28,13 +30,16 @@ class _LoginViewState extends State<LoginView> {
   Future<void> _loadSavedServerIp() async {
     final viewModel = Provider.of<LoginViewModel>(context, listen: false);
     final savedIp = await viewModel.getLastServerIp();
-    if (savedIp != null && mounted) {
+    final savedPort = await viewModel.getLastServerPort();
+    if (savedIp != null && mounted && savedPort != null) {
       setState(() {
         _serverController.text = savedIp;
+        _serverPortController.text = savedPort;
       });
     } else if (mounted) {
       setState(() {
         _serverController.text = '10.0.2.2';
+        _serverPortController.text = '8080';
       });
     }
   }
@@ -44,6 +49,7 @@ class _LoginViewState extends State<LoginView> {
     _emailController.dispose();
     _passwordController.dispose();
     _serverController.dispose();
+    _serverPortController.dispose();
     super.dispose();
   }
 
@@ -129,6 +135,11 @@ class _LoginViewState extends State<LoginView> {
                       ),
                       const SizedBox(height: 16),
                       PiViewTextField(
+                          controller: _serverPortController,
+                          label: "Port",
+                          icon: Icons.settings_ethernet_rounded),
+                      const SizedBox(height: 16),
+                      PiViewTextField(
                         controller: _emailController,
                         label: 'Email',
                         icon: Icons.email_outlined,
@@ -154,6 +165,7 @@ class _LoginViewState extends State<LoginView> {
                             : () async {
                                 bool success = await model.login(
                                   _serverController.text,
+                                  _serverPortController.text,
                                   _emailController.text,
                                   _passwordController.text,
                                 );
@@ -162,7 +174,8 @@ class _LoginViewState extends State<LoginView> {
                                     context,
                                     '/file_browser',
                                     arguments: {
-                                      'serverIp': _serverController.text
+                                      'serverIp': _serverController.text,
+                                      'serverPort': _serverPortController.text,
                                     },
                                   );
                                 } else if (mounted) {

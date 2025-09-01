@@ -15,7 +15,8 @@ class UploadViewModel extends ChangeNotifier {
   int get uploadedFiles => _uploadedFiles;
   double get currentFileProgress => _currentFileProgress;
 
-  Future<bool> uploadFiles(String serverIp, String currentPath, List<File> files) async {
+  Future<bool> uploadFiles(String serverIp, String serverPort,
+      String currentPath, List<File> files) async {
     _isUploading = true;
     _error = null;
     _totalFiles = files.length;
@@ -25,7 +26,8 @@ class UploadViewModel extends ChangeNotifier {
     bool allSuccess = true;
 
     for (var file in files) {
-      bool success = await _uploadSingleFile(serverIp, currentPath, file);
+      bool success =
+          await _uploadSingleFile(serverIp, serverPort, currentPath, file);
       if (!success) {
         allSuccess = false;
       }
@@ -38,11 +40,12 @@ class UploadViewModel extends ChangeNotifier {
     return allSuccess;
   }
 
-  Future<bool> _uploadSingleFile(String serverIp, String currentPath, File file) async {
+  Future<bool> _uploadSingleFile(
+      String serverIp, String serverPort, String currentPath, File file) async {
     try {
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('http://$serverIp:8080/api/v1/uploadfile'),
+        Uri.parse('http://$serverIp:$serverPort/api/v1/uploadfile'),
       );
 
       request.fields['user'] = 'default';
@@ -54,7 +57,8 @@ class UploadViewModel extends ChangeNotifier {
       if (response.statusCode == 200) {
         return true;
       } else {
-        throw Exception('Failed to upload file. Status code: ${response.statusCode}');
+        throw Exception(
+            'Failed to upload file. Status code: ${response.statusCode}');
       }
     } catch (e) {
       _error = 'Error uploading file ${file.path}: $e';

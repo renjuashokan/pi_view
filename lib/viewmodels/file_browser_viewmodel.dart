@@ -11,6 +11,7 @@ class FileBrowserViewModel extends ChangeNotifier {
   List<FileItem> _files = [];
   String _currentPath = '.';
   String _serverIp;
+  String _serverPort;
   bool _isLoading = false;
   String? _error;
   SortCriteria _sortCriteria = SortCriteria.timeEdited;
@@ -24,7 +25,7 @@ class FileBrowserViewModel extends ChangeNotifier {
   static const int itemsPerPage = 25;
   bool _hasMorePages = true;
 
-  FileBrowserViewModel(this._serverIp);
+  FileBrowserViewModel(this._serverIp, this._serverPort);
 
   List<FileItem> get files => _files;
   String get currentPath => _currentPath;
@@ -33,6 +34,7 @@ class FileBrowserViewModel extends ChangeNotifier {
   SortCriteria get sortCriteria => _sortCriteria;
   bool get isAscending => _isAscending;
   String get serverIp => _serverIp;
+  String get serverPort => _serverPort;
   int get currentPage => _currentPage;
   int get totalPages => (_totalFiles / itemsPerPage).ceil();
   bool get hasMorePages => _hasMorePages;
@@ -102,7 +104,7 @@ class FileBrowserViewModel extends ChangeNotifier {
         'limit': itemsPerPage.toString(),
       };
 
-      final url = Uri.parse('http://${_serverIp}:8080/api/v1/search')
+      final url = Uri.parse('http://$_serverIp:$_serverPort/api/v1/search')
           .replace(queryParameters: queryParams);
 
       final response = await http.get(url);
@@ -153,8 +155,9 @@ class FileBrowserViewModel extends ChangeNotifier {
         queryParams['recursive'] = 'true';
       }
 
-      final url = Uri.parse('http://${_serverIp}:8080/api/v1/$endpoint')
-          .replace(queryParameters: queryParams);
+      final url =
+          Uri.parse('http://${_serverIp}:${_serverPort}/api/v1/$endpoint')
+              .replace(queryParameters: queryParams);
 
       final response = await http.get(url);
 
@@ -246,7 +249,7 @@ class FileBrowserViewModel extends ChangeNotifier {
 
   String getThumbnailUrl(FileItem file) {
     String path = _getFilePath(file.fullName);
-    String baseUrl = 'http://$_serverIp:8080/api/v1';
+    String baseUrl = 'http://$_serverIp:${_serverPort}/api/v1';
 
     if (isVideo(file.name)) {
       return '$baseUrl/thumbnail/${Uri.encodeComponent(path)}';
@@ -352,7 +355,7 @@ class FileBrowserViewModel extends ChangeNotifier {
   Future<bool> createFolder(String folderName) async {
     try {
       final response = await http.post(
-        Uri.parse('http://$_serverIp:8080/api/v1/createfolder')
+        Uri.parse('http://$_serverIp:${_serverPort}/api/v1/createfolder')
             .replace(queryParameters: {
           'path': _getApiPath(),
           'foldername': folderName,

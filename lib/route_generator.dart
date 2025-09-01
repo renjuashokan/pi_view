@@ -23,15 +23,21 @@ class RouteGenerator {
       case '/file_browser':
         final args = settings.arguments as Map<String, dynamic>?;
         final serverIp = args?['serverIp'] as String? ?? 'localhost';
-        return _buildPageRoute(FileBrowserView(serverIp: serverIp));
+        final serverPort = args?['serverPort'] as String? ?? '8080';
+        return _buildPageRoute(FileBrowserView(
+          serverIp: serverIp,
+          serverPort: serverPort,
+        ));
       case '/media_player':
         final args = settings.arguments as Map<String, dynamic>;
         final serverAddress = args['serverAddress'] as String;
+        final serverPort = args['serverPort'] as String? ?? '8080';
         final playlist = args['playlist'] as List<MediaItem>;
         final initialIndex = args['initialIndex'] as int;
         return _buildPageRoute(
           MediaPlayerView(
             serverAddress: serverAddress,
+            serverPort: serverPort,
             playlist: playlist,
             initialIndex: initialIndex,
           ),
@@ -39,11 +45,13 @@ class RouteGenerator {
       case '/image_viewer':
         final args = settings.arguments as Map<String, dynamic>;
         final serverAddress = args['serverAddress'] as String;
+        final serverPort = args['serverPort'] as String? ?? '8080';
         final imageItem = args['imageItem'] as ImageItem;
         final allimages = args['allImages'] as List<ImageItem>;
         return _buildPageRoute(
           ImageView(
             serverAddress: serverAddress,
+            serverPort: serverPort,
             imageItem: imageItem,
             allImages: allimages,
           ),

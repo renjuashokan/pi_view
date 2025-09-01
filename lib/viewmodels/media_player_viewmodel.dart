@@ -3,18 +3,19 @@ import '../models/media_item.dart';
 
 class MediaPlayerViewModel extends ChangeNotifier {
   final String _serverAddress;
+  final String _serverPort;
   List<MediaItem> _playlist = [];
   int _currentIndex = 0;
   bool _isLoading = false;
   String? _error;
   MediaItem? _currentMedia;
 
-  MediaPlayerViewModel(this._serverAddress);
+  MediaPlayerViewModel(this._serverAddress, this._serverPort);
 
   bool get isLoading => _isLoading;
   String? get error => _error;
   String? get streamUrl => _currentMedia?.path != null
-      ? 'http://$_serverAddress:8080/api/v1/stream/${Uri.encodeFull(_currentMedia!.path)}'
+      ? 'http://$_serverAddress:$_serverPort/api/v1/stream/${Uri.encodeFull(_currentMedia!.path)}'
       : null;
   MediaItem? get currentMedia => _currentMedia;
   bool get hasNext => _currentIndex < _playlist.length - 1;

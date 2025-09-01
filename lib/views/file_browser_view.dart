@@ -15,8 +15,11 @@ import '../models/image_item.dart';
 
 class FileBrowserView extends StatefulWidget {
   final String serverIp;
+  final String serverPort;
 
-  const FileBrowserView({Key? key, required this.serverIp}) : super(key: key);
+  const FileBrowserView(
+      {Key? key, required this.serverIp, required this.serverPort})
+      : super(key: key);
 
   @override
   State<FileBrowserView> createState() => _FileBrowserViewState();
@@ -105,8 +108,9 @@ class _FileBrowserViewState extends State<FileBrowserView> {
       providers: [
         ChangeNotifierProvider(
           create: (_) {
-            final viewModel = FileBrowserViewModel(widget.serverIp)
-              ..fetchFiles();
+            final viewModel =
+                FileBrowserViewModel(widget.serverIp, widget.serverPort)
+                  ..fetchFiles();
             _viewModel = viewModel;
             return viewModel;
           },
@@ -385,6 +389,7 @@ class _FileBrowserViewState extends State<FileBrowserView> {
         '/media_player',
         arguments: {
           'serverAddress': widget.serverIp,
+          'serverPort': widget.serverPort,
           'playlist': mediaItems,
           'initialIndex': currentIndex,
         },
@@ -407,6 +412,7 @@ class _FileBrowserViewState extends State<FileBrowserView> {
               : '${viewModel.currentPath}/${file.fullName}');
       Navigator.of(context).pushNamed('/image_viewer', arguments: {
         'serverAddress': widget.serverIp,
+        'serverPort': widget.serverPort,
         'imageItem': imageItem,
         'allImages': allImages,
       });
@@ -616,6 +622,7 @@ class _FileBrowserViewState extends State<FileBrowserView> {
       List<File> files = result.paths.map((path) => File(path!)).toList();
       bool success = await uploadViewModel.uploadFiles(
         fileBrowserViewModel.serverIp,
+        fileBrowserViewModel.serverPort,
         fileBrowserViewModel.currentPath,
         files,
       );

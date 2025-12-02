@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
@@ -408,11 +409,26 @@ class _FileBrowserViewState extends State<FileBrowserView> {
                   },
                 ),
                 ListTile(
-                  leading: const Icon(Icons.open_in_new),
-                  title: const Text("Open with External Player"),
-                  onTap: () {
+                  leading: const Icon(Icons.copy),
+                  title: const Text("Copy Video URL"),
+                  onTap: () async {
                     Navigator.pop(context);
-                    _openVideoExternally(context, viewModel, file);
+                    final String fileName = file.fullName;
+                    final String basePath = viewModel.currentPath == '.'
+                        ? ''
+                        : '/${Uri.encodeComponent(viewModel.currentPath)}';
+                    final String videoUrl =
+                        'http://${widget.serverIp}:${widget.serverPort}/api/v1/stream$basePath/${Uri.encodeComponent(fileName)}';
+                    
+                    await Clipboard.setData(ClipboardData(text: videoUrl));
+                    
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Video URL copied to clipboard'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
                   },
                 ),
               ],

@@ -1,9 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
 import '../viewmodels/file_browser_viewmodel.dart';
 import '../viewmodels/upload_viewmodel.dart';
@@ -333,6 +335,9 @@ class _FileBrowserViewState extends State<FileBrowserView> {
       onTap: file.isDirectory
           ? () => viewModel.navigateToDirectory(file.fullName)
           : () => _handleFileOpen(context, viewModel, file, isVideo, isPicture),
+      onLongPress: file.isDirectory
+          ? null
+          : () => _showFileOptions(context, viewModel, file, isVideo, isPicture),
       child: Card(
         child: Column(
           children: [
@@ -371,6 +376,146 @@ class _FileBrowserViewState extends State<FileBrowserView> {
   }
 
   void _handleFileOpen(BuildContext context, FileBrowserViewModel viewModel,
+      FileItem file, bool isVideo, bool isPicture) {
+    if (isVideo) {
+      // Directly play video in app on tap
+      final mediaItems = viewModel.files
+          .where((f) => viewModel.isVideo(f.fullName))
+          .map((f) => MediaItem(
+                name: f.fullName,
+                path: viewModel.currentPath == '.'
+                    ? f.fullName
+                    : '${viewModel.currentPath}/${f.fullName}',
+              ))
+          .toList();
+      final currentIndex = mediaItems
+          .indexWhere((item) => item.name == file.fullName);
+      Navigator.of(context).pushNamed(
+        '/media_player',
+        arguments: {
+          'serverAddress': widget.serverIp,
+          'serverPort': widget.serverPort,
+          'playlist': mediaItems,
+          'initialIndex': currentIndex,
+        },
+      );
+    } else if (isPicture) {
+      // Directly open image viewer on tap
+      final allImages = viewModel.files
+          .where((f) => viewModel.isPicture(f.fullName))
+          .map((f) => ImageItem(
+                name: f.fullName,
+                path: viewModel.currentPath == '.'
+                    ? f.fullName
+                    : '${viewModel.currentPath}/${f.fullName}',
+              ))
+          .toList();
+      final imageItem = ImageItem(
+          name: file.fullName,
+          path: viewModel.currentPath == '.'
+              ? file.fullName
+              : '${viewModel.currentPath}/${file.fullName}');
+      Navigator.of(context).pushNamed('/image_viewer', arguments: {
+        'serverAddress': widget.serverIp,
+        'serverPort': widget.serverPort,
+        'imageItem': imageItem,
+        'allImages': allImages,
+      });
+    }
+  }
+
+  void _showFileOptions(BuildContext context, FileBrowserViewModel viewModel,
+      FileItem file, bool isVideo, bool isPicture) {
+    if (isVideo) {
+      showModalBottomSheet(
+        context: context,
+        builder: (context) {
+          return SafeArea(
+            child: Wrap(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.play_arrow),
+                  title: const Text("Play in App"),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _handleFileOpen(context, viewModel, file, isVideo, isPicture);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.copy),
+                  title: const Text("Copy Video URL"),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    final String fileName = file.fullName;
+                    final String basePath = viewModel.currentPath == '.'
+                        ? ''
+                        : '/${Uri.encodeComponent(viewModel.currentPath)}';
+                    final String videoUrl =
+                        'http://${widget.serverIp}:${widget.serverPort}/api/v1/stream$basePath/${Uri.encodeComponent(fileName)}';
+                    
+                    await Clipboard.setData(ClipboardData(text: videoUrl));
+                    
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Video URL copied to clipboard'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    } else if (isPicture) {
+      showModalBottomSheet(
+        context: context,
+        builder: (context) {
+          return SafeArea(
+            child: Wrap(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.image),
+                  title: const Text("View in App"),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _handleFileOpen(context, viewModel, file, isVideo, isPicture);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.copy),
+                  title: const Text("Copy Image URL"),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    final String fileName = file.fullName;
+                    final String basePath = viewModel.currentPath == '.'
+                        ? ''
+                        : '/${Uri.encodeComponent(viewModel.currentPath)}';
+                    final String imageUrl =
+                        'http://${widget.serverIp}:${widget.serverPort}/api/v1/image$basePath/${Uri.encodeComponent(fileName)}';
+                    
+                    await Clipboard.setData(ClipboardData(text: imageUrl));
+                    
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Image URL copied to clipboard'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    }
+  }
+
+  void _handleFileOpen_old(BuildContext context, FileBrowserViewModel viewModel,
       FileItem file, bool isVideo, bool isPicture) {
     if (isVideo) {
       final mediaItems = viewModel.files
@@ -575,6 +720,9 @@ class _FileBrowserViewState extends State<FileBrowserView> {
       onTap: file.isDirectory
           ? () => viewModel.navigateToDirectory(file.fullName)
           : () => _handleFileOpen(context, viewModel, file, isVideo, isPicture),
+      onLongPress: file.isDirectory
+          ? null
+          : () => _showFileOptions(context, viewModel, file, isVideo, isPicture),
     );
   }
 
@@ -609,6 +757,52 @@ class _FileBrowserViewState extends State<FileBrowserView> {
         );
       },
     );
+  }
+
+  void _openVideoExternally(BuildContext context,
+      FileBrowserViewModel viewModel, FileItem file) async {
+    final String fileName = file.fullName;
+    final String basePath = viewModel.currentPath == '.'
+        ? ''
+        : '/${Uri.encodeComponent(viewModel.currentPath)}';
+    final String videoUrl =
+        'http://${widget.serverIp}:${widget.serverPort}/api/v1/stream$basePath/${Uri.encodeComponent(fileName)}';
+
+    if (Platform.isAndroid) {
+      // 🔥 Use Android Intent to force external player chooser
+      final intentUrl = Uri(
+        scheme: 'intent',
+        path: '/uri',
+        queryParameters: {
+          'package': 'org.videolan.vlc', // Default to VLC (can be any player)
+          'S.browser_fallback_url': Uri.encodeComponent(
+              'https://play.google.com/store/apps/details?id=org.videolan.vlc'),
+        },
+        fragment: videoUrl, // The actual video URL goes here
+      ).toString();
+
+      try {
+        final success = await launchUrl(
+          Uri.parse(intentUrl),
+          mode: LaunchMode.externalApplication,
+        );
+        if (!success) {
+          // Fallback: try normal launch
+          await launchUrl(Uri.parse(videoUrl));
+        }
+      } catch (e) {
+        // If intent fails, fall back to normal launch
+        await launchUrl(Uri.parse(videoUrl));
+      }
+    } else if (Platform.isIOS) {
+      // On iOS, we can't force chooser, but we can try to suggest external apps
+      // Some players register for video types, but it's hit or miss
+      await launchUrl(
+        Uri.parse(videoUrl),
+        mode: LaunchMode.externalApplication,
+        // You can also try `universalLinksOnly: false`
+      );
+    }
   }
 
   void _uploadFiles(

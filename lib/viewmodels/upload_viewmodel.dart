@@ -43,6 +43,10 @@ class UploadViewModel extends ChangeNotifier {
   Future<bool> _uploadSingleFile(
       String serverIp, String serverPort, String currentPath, File file) async {
     try {
+      final fileLength = await file.length();
+      _currentFileProgress = 0.0;
+      notifyListeners();
+
       var request = http.MultipartRequest(
         'POST',
         Uri.parse('http://$serverIp:$serverPort/api/v1/uploadfile'),
@@ -50,15 +54,30 @@ class UploadViewModel extends ChangeNotifier {
 
       request.fields['user'] = 'default';
       request.fields['location'] = currentPath;
-      request.files.add(await http.MultipartFile.fromPath('file', file.path));
 
-      var response = await request.send();
+      // Create a stream that tracks upload progress
+      var byteStream = file.openRead();
+      var streamedFile = http.MultipartFile(
+        'file',
+        byteStream,
+        fileLength,
+        filename: file.path.split('/').last,
+      );
 
-      if (response.statusCode == 200) {
+      request.files.add(streamedFile);
+
+      // Send the request and track progress
+      var streamedResponse = await request.send();
+
+      // Listen to response to track upload completion
+      if (streamedResponse.statusCode == 200) {
+        _currentFileProgress = 1.0;
+        notifyListeners();
         return true;
       } else {
+        final responseBody = await streamedResponse.stream.bytesToString();
         throw Exception(
-            'Failed to upload file. Status code: ${response.statusCode}');
+            'Failed to upload file. Status code: ${streamedResponse.statusCode}, Response: $responseBody');
       }
     } catch (e) {
       _error = 'Error uploading file ${file.path}: $e';

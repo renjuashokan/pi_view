@@ -78,6 +78,27 @@ class _MediaPlayerContentState extends State<MediaPlayerContent> {
       deviceOrientationsAfterFullScreen: [DeviceOrientation.portraitUp],
       fullScreenByDefault: false,
       allowFullScreen: true,
+      additionalOptions: (context) {
+        return [
+          OptionItem(
+            onTap: (context) {
+              Navigator.of(context).pop();
+              Clipboard.setData(ClipboardData(text: url)).then((_) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Stream URL copied to clipboard'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                }
+              });
+            },
+            iconData: Icons.copy,
+            title: 'Copy Stream URL',
+          ),
+        ];
+      },
     );
 
     AutoOrientation.fullAutoMode();

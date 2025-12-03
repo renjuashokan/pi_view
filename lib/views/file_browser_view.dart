@@ -335,6 +335,9 @@ class _FileBrowserViewState extends State<FileBrowserView> {
       onTap: file.isDirectory
           ? () => viewModel.navigateToDirectory(file.fullName)
           : () => _handleFileOpen(context, viewModel, file, isVideo, isPicture),
+      onLongPress: file.isDirectory
+          ? null
+          : () => _showFileOptions(context, viewModel, file, isVideo, isPicture),
       child: Card(
         child: Column(
           children: [
@@ -375,6 +378,55 @@ class _FileBrowserViewState extends State<FileBrowserView> {
   void _handleFileOpen(BuildContext context, FileBrowserViewModel viewModel,
       FileItem file, bool isVideo, bool isPicture) {
     if (isVideo) {
+      // Directly play video in app on tap
+      final mediaItems = viewModel.files
+          .where((f) => viewModel.isVideo(f.fullName))
+          .map((f) => MediaItem(
+                name: f.fullName,
+                path: viewModel.currentPath == '.'
+                    ? f.fullName
+                    : '${viewModel.currentPath}/${f.fullName}',
+              ))
+          .toList();
+      final currentIndex = mediaItems
+          .indexWhere((item) => item.name == file.fullName);
+      Navigator.of(context).pushNamed(
+        '/media_player',
+        arguments: {
+          'serverAddress': widget.serverIp,
+          'serverPort': widget.serverPort,
+          'playlist': mediaItems,
+          'initialIndex': currentIndex,
+        },
+      );
+    } else if (isPicture) {
+      // Directly open image viewer on tap
+      final allImages = viewModel.files
+          .where((f) => viewModel.isPicture(f.fullName))
+          .map((f) => ImageItem(
+                name: f.fullName,
+                path: viewModel.currentPath == '.'
+                    ? f.fullName
+                    : '${viewModel.currentPath}/${f.fullName}',
+              ))
+          .toList();
+      final imageItem = ImageItem(
+          name: file.fullName,
+          path: viewModel.currentPath == '.'
+              ? file.fullName
+              : '${viewModel.currentPath}/${file.fullName}');
+      Navigator.of(context).pushNamed('/image_viewer', arguments: {
+        'serverAddress': widget.serverIp,
+        'serverPort': widget.serverPort,
+        'imageItem': imageItem,
+        'allImages': allImages,
+      });
+    }
+  }
+
+  void _showFileOptions(BuildContext context, FileBrowserViewModel viewModel,
+      FileItem file, bool isVideo, bool isPicture) {
+    if (isVideo) {
       showModalBottomSheet(
         context: context,
         builder: (context) {
@@ -386,26 +438,7 @@ class _FileBrowserViewState extends State<FileBrowserView> {
                   title: const Text("Play in App"),
                   onTap: () {
                     Navigator.pop(context);
-                    final mediaItems = viewModel.files
-                        .where((f) => viewModel.isVideo(f.fullName))
-                        .map((f) => MediaItem(
-                              name: f.fullName,
-                              path: viewModel.currentPath == '.'
-                                  ? f.fullName
-                                  : '${viewModel.currentPath}/${f.fullName}',
-                            ))
-                        .toList();
-                    final currentIndex = mediaItems
-                        .indexWhere((item) => item.name == file.fullName);
-                    Navigator.of(context).pushNamed(
-                      '/media_player',
-                      arguments: {
-                        'serverAddress': widget.serverIp,
-                        'serverPort': widget.serverPort,
-                        'playlist': mediaItems,
-                        'initialIndex': currentIndex,
-                      },
-                    );
+                    _handleFileOpen(context, viewModel, file, isVideo, isPicture);
                   },
                 ),
                 ListTile(
@@ -437,27 +470,48 @@ class _FileBrowserViewState extends State<FileBrowserView> {
         },
       );
     } else if (isPicture) {
-      // Keep existing image logic
-      final allImages = viewModel.files
-          .where((f) => viewModel.isPicture(f.fullName))
-          .map((f) => ImageItem(
-                name: f.fullName,
-                path: viewModel.currentPath == '.'
-                    ? f.fullName
-                    : '${viewModel.currentPath}/${f.fullName}',
-              ))
-          .toList();
-      final imageItem = ImageItem(
-          name: file.fullName,
-          path: viewModel.currentPath == '.'
-              ? file.fullName
-              : '${viewModel.currentPath}/${file.fullName}');
-      Navigator.of(context).pushNamed('/image_viewer', arguments: {
-        'serverAddress': widget.serverIp,
-        'serverPort': widget.serverPort,
-        'imageItem': imageItem,
-        'allImages': allImages,
-      });
+      showModalBottomSheet(
+        context: context,
+        builder: (context) {
+          return SafeArea(
+            child: Wrap(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.image),
+                  title: const Text("View in App"),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _handleFileOpen(context, viewModel, file, isVideo, isPicture);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.copy),
+                  title: const Text("Copy Image URL"),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    final String fileName = file.fullName;
+                    final String basePath = viewModel.currentPath == '.'
+                        ? ''
+                        : '/${Uri.encodeComponent(viewModel.currentPath)}';
+                    final String imageUrl =
+                        'http://${widget.serverIp}:${widget.serverPort}/api/v1/image$basePath/${Uri.encodeComponent(fileName)}';
+                    
+                    await Clipboard.setData(ClipboardData(text: imageUrl));
+                    
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Image URL copied to clipboard'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+      );
     }
   }
 
@@ -666,6 +720,9 @@ class _FileBrowserViewState extends State<FileBrowserView> {
       onTap: file.isDirectory
           ? () => viewModel.navigateToDirectory(file.fullName)
           : () => _handleFileOpen(context, viewModel, file, isVideo, isPicture),
+      onLongPress: file.isDirectory
+          ? null
+          : () => _showFileOptions(context, viewModel, file, isVideo, isPicture),
     );
   }
 
